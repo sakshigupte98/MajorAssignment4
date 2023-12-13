@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Major Assignment 4</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://d3js.org/d3-contour.v2.min.js"></script>
+    <style>
+        input[type=range] {
+            width: 20%;
+            margin: 10px;
+            background: #dbcdcd;
+            border: 1px solid #ada7a7;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        svg {
+            background: transparent;
+        }
+    </style>
+</head>
+<body>
+<input type="range" min="1" max="1000" value="512" id="binCountSlider">
+<span id="binCountValue">512</span>
+
+<svg id="contourMap" width="800" height="600"></svg>
+
+<script>
+    d3.csv("Data_CT.csv").then(function(data) {
+        const values_T = data.map(row => +row[0]);
+        const m = 512;
+        const n = 512;
+        let bin_counts = 512;
+
+        const colorScale = d3.scaleLinear()
+            .domain(d3.range(d3.min(values_T), d3.max(values_T), parseInt(Math.abs(d3.max(values_T) - d3.min(values_T)) / 6.5)))
+            .range(["#ffffff", "#3e5ebc", "#2b83bf", "#abdda6","#d7191c","#fdfa72","#fdae61"])
+            .interpolate(d3.interpolateHcl);
+
+        const svg = d3.select("#contourMap")
+            .attr("width", 800)
+            .attr("height", 600);
+
+        function plotContours(bin_counts) {
+            const contours = d3.contours()
+                .size([m, n])
+                .thresholds(d3.range(d3.min(values_T), d3.max(values_T), bin_counts))
+                (values_T);
+
+            svg.selectAll("path").remove();
+
+            svg.selectAll("path")
+                .data(contours)
+                .enter().append("path")
+                .attr("d", d3.geoPath())
+                .attr("fill", d => colorScale(d.value));
+        }
+
+        plotContours(bin_counts);
+
+        const binCountSlider = d3.select("#binCountSlider");
+        const binCountValue = d3.select("#binCountValue");
+
+        binCountSlider.on("input", function() {
+            bin_counts = +this.value;
+            binCountValue.text(bin_counts);
+            plotContours(bin_counts);
+        });
+    });
+</script>
+</body>
+</html>
